@@ -80,6 +80,8 @@ export const api = {
       }),
     createFeature: (data: { key: string; label: string; category: string }) =>
       request<Feature>('/features', { method: 'POST', body: JSON.stringify(data) }),
+    updateFeature: (id: number, data: Partial<{ key: string; label: string; category: string }>) =>
+      request<Feature>(`/features/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteFeature: (id: number) =>
       request<{ ok: boolean }>(`/features/${id}`, { method: 'DELETE' }),
   },

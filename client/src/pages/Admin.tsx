@@ -135,6 +135,10 @@ function FeaturesTab() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editDraft, setEditDraft] = useState<{ label: string; key: string; category: string }>({ label: '', key: '', category: '' })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState('')
 
   // Form state
   const [label, setLabel] = useState('')
@@ -194,6 +198,35 @@ function FeaturesTab() {
       setFormError(err instanceof Error ? err.message : 'Failed to create feature')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const startEdit = (f: Feature) => {
+    setEditingId(f.id)
+    setEditDraft({ label: f.label, key: f.key, category: f.category })
+    setEditError('')
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditError('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editDraft.label.trim() || !editDraft.key.trim() || !editDraft.category.trim()) {
+      setEditError('All fields are required.')
+      return
+    }
+    setEditSaving(true)
+    setEditError('')
+    try {
+      const updated = await api.admin.updateFeature(editingId!, editDraft)
+      setFeatures((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
+      setEditingId(null)
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -301,19 +334,83 @@ function FeaturesTab() {
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{cat}</h3>
                 <div className="space-y-1">
                   {grouped[cat].map((f) => (
-                    <div key={f.id} className="flex items-center justify-between gap-3 py-1.5">
-                      <div className="min-w-0">
-                        <span className="text-sm font-medium text-gray-800">{f.label}</span>
-                        <span className="ml-2 text-xs text-gray-400 font-mono">{f.key}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(f)}
-                        disabled={deleting === f.id}
-                        className="shrink-0 text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
-                      >
-                        {deleting === f.id ? '...' : 'Delete'}
-                      </button>
+                    <div key={f.id}>
+                      {editingId === f.id ? (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                          <div className="grid grid-cols-[1fr_1fr_1fr] gap-2">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-0.5">Label</label>
+                              <input
+                                type="text"
+                                value={editDraft.label}
+                                onChange={(e) => setEditDraft((d) => ({ ...d, label: e.target.value }))}
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-0.5">Key</label>
+                              <input
+                                type="text"
+                                value={editDraft.key}
+                                onChange={(e) => setEditDraft((d) => ({ ...d, key: e.target.value }))}
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-0.5">Category</label>
+                              <input
+                                type="text"
+                                list="category-suggestions"
+                                value={editDraft.category}
+                                onChange={(e) => setEditDraft((d) => ({ ...d, category: e.target.value }))}
+                                className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                              />
+                            </div>
+                          </div>
+                          {editError && <p className="text-red-600 text-xs">{editError}</p>}
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleSaveEdit}
+                              disabled={editSaving}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors disabled:opacity-60"
+                            >
+                              {editSaving ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              className="px-3 py-1 text-gray-600 hover:text-gray-800 text-xs rounded border border-gray-200 hover:border-gray-400 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3 py-1.5">
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium text-gray-800">{f.label}</span>
+                            <span className="ml-2 text-xs text-gray-400 font-mono">{f.key}</span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => startEdit(f)}
+                              className="text-xs text-gray-400 hover:text-blue-600 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(f)}
+                              disabled={deleting === f.id}
+                              className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                            >
+                              {deleting === f.id ? '...' : 'Delete'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

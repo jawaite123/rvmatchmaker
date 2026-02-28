@@ -32,6 +32,30 @@ router.post('/', async (req: Request, res: Response) => {
   }
 })
 
+// PATCH /api/features/:id
+router.patch('/:id', async (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  if (isNaN(id)) {
+    res.status(400).json({ error: 'Invalid id' })
+    return
+  }
+  const { key, label, category } = req.body as { key?: string; label?: string; category?: string }
+  const data: Record<string, string> = {}
+  if (label) data.label = label.trim()
+  if (category) data.category = category.trim()
+  if (key) data.key = key.trim().toLowerCase().replace(/\s+/g, '_')
+  if (Object.keys(data).length === 0) {
+    res.status(400).json({ error: 'Nothing to update' })
+    return
+  }
+  try {
+    const feature = await prisma.feature.update({ where: { id }, data })
+    res.json(feature)
+  } catch {
+    res.status(409).json({ error: 'Update failed — key may already exist' })
+  }
+})
+
 // DELETE /api/features/:id
 router.delete('/:id', async (req: Request, res: Response) => {
   const id = Number(req.params.id)
