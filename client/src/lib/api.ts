@@ -2,6 +2,7 @@ export interface Feature {
   id: number
   key: string
   label: string
+  category: string
 }
 
 export interface RVFeatureJoin {

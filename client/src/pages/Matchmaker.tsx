@@ -3,16 +3,17 @@ import { useNavigate, Link } from 'react-router-dom'
 import { api, RV_TYPES, FLOORPLAN_TYPES } from '../lib/api'
 import type { Feature, RV } from '../lib/api'
 
-const FEATURE_CATEGORIES = [
-  { label: 'Sleeping', keys: ['king_bed', 'queen_bed', 'twin_beds', 'corner_bed', 'murphy_bed', 'bunkhouse'] },
-  { label: 'Bathroom', keys: ['full_bathroom', 'dry_bath', 'wet_bath', 'outdoor_shower', 'tankless_water_heater'] },
-  { label: 'Kitchen', keys: ['outdoor_kitchen', 'residential_fridge', 'convection_oven'] },
-  { label: 'Climate', keys: ['ducted_ac', 'dual_ac', 'heated_tanks', 'fireplace', 'all_season'] },
-  { label: 'Power & Energy', keys: ['solar', 'solar_prep', 'lithium_battery', 'inverter', '50amp', 'generator', 'lp_quick_connect'] },
-  { label: 'Entertainment', keys: ['outdoor_tv', 'smart_tv', 'satellite', 'theater_seating', 'usb_charging'] },
-  { label: 'Tech & Convenience', keys: ['washer_dryer', 'backup_camera', 'leveling_system', 'swivel_cab_seats'] },
-  { label: 'Storage', keys: ['pass_through_storage', 'basement_storage', 'slide_toppers'] },
-  { label: 'Comfort & Other', keys: ['day_night_shades', 'diesel', 'pet_friendly'] },
+// Controls display order of categories. Any category not listed here appears at the end.
+const CATEGORY_ORDER = [
+  'Sleeping',
+  'Bathroom',
+  'Kitchen',
+  'Climate',
+  'Power & Energy',
+  'Entertainment',
+  'Tech & Convenience',
+  'Storage',
+  'Comfort & Other',
 ]
 
 const FLOORPLAN_ICONS: Record<string, string> = {
@@ -118,10 +119,17 @@ export default function Matchmaker() {
     }
   }
 
-  const featureLabelMap = useMemo(
-    () => Object.fromEntries(features.map((f) => [f.key, f.label])),
-    [features],
-  )
+  const featureCategories = useMemo(() => {
+    const grouped: Record<string, Feature[]> = {}
+    for (const f of features) {
+      ;(grouped[f.category] ??= []).push(f)
+    }
+    const ordered = CATEGORY_ORDER.filter((c) => grouped[c]).map((c) => ({ label: c, features: grouped[c] }))
+    const rest = Object.keys(grouped)
+      .filter((c) => !CATEGORY_ORDER.includes(c))
+      .map((c) => ({ label: c, features: grouped[c] }))
+    return [...ordered, ...rest]
+  }, [features])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -276,16 +284,11 @@ export default function Matchmaker() {
 
           {/* Right: feature categories */}
           <div className="space-y-4">
-            {FEATURE_CATEGORIES.map((cat) => {
-              const catFeatures = cat.keys
-                .map((k) => (featureLabelMap[k] ? { key: k, label: featureLabelMap[k] } : null))
-                .filter(Boolean) as { key: string; label: string }[]
-              if (catFeatures.length === 0) return null
-              return (
-                <div key={cat.label} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-semibold text-gray-800 text-sm mb-3">{cat.label}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {catFeatures.map((f) => {
+            {featureCategories.map((cat) => (
+              <div key={cat.label} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                <h3 className="font-semibold text-gray-800 text-sm mb-3">{cat.label}</h3>
+                <div className="flex flex-wrap gap-2">
+                    {cat.features.map((f) => {
                       const mode = featureState[f.key]
                       return (
                         <button
@@ -312,10 +315,9 @@ export default function Matchmaker() {
                         </button>
                       )
                     })}
-                  </div>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </div>

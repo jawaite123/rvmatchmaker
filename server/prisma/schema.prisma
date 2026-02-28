@@ -30,10 +30,11 @@ model RV {
 }
 
 model Feature {
-  id    Int         @id @default(autoincrement())
-  key   String      @unique
-  label String
-  rvs   RVFeature[]
+  id       Int         @id @default(autoincrement())
+  key      String      @unique
+  label    String
+  category String      @default("Other")
+  rvs      RVFeature[]
 }
 
 model RVFeature {
