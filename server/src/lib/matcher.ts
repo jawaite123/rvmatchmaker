@@ -10,6 +10,7 @@ export interface Preferences {
 
   // Step 3: Floorplan preferences
   preferredFloorplans: string[]
+  mustHaveFloorplans: string[]
 }
 
 export interface RVWithFeatures {
@@ -52,6 +53,7 @@ export function scoreAndRank(rvs: RVWithFeatures[], prefs: Preferences): ScoredR
     if (prefs.maxLengthFt !== null && rv.lengthFt > prefs.maxLengthFt) continue
     if (prefs.minSleeps !== null && rv.sleeps < prefs.minSleeps) continue
     if (prefs.mustHaveFeatures.some((key) => !rvFeatureKeys.includes(key))) continue
+    if (prefs.mustHaveFloorplans?.length > 0 && !prefs.mustHaveFloorplans.includes(rv.floorplanType)) continue
 
     // Step 2: Feature score
     let featureScore = 0

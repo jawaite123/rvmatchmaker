@@ -47,6 +47,7 @@ export interface MatchPreferences {
   mustHaveFeatures: string[]
   rankedFeatures: string[]
   preferredFloorplans: string[]
+  mustHaveFloorplans: string[]
 }
 
 const BASE = '/api'

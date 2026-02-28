@@ -38,7 +38,7 @@ export default function Matchmaker() {
   const [rvTypes, setRvTypes] = useState<string[]>([])
   const [maxLengthFt, setMaxLengthFt] = useState('')
   const [minSleeps, setMinSleeps] = useState('')
-  const [preferredFloorplans, setPreferredFloorplans] = useState<string[]>([])
+  const [floorplanState, setFloorplanState] = useState<Record<string, FeatureMode>>({})
   const [featureState, setFeatureState] = useState<Record<string, FeatureMode>>({})
   const [selectionOrder, setSelectionOrder] = useState<string[]>([])
 
@@ -52,18 +52,18 @@ export default function Matchmaker() {
   }, [])
 
   const matchCount = useMemo(() => {
-    const mustHave = Object.entries(featureState)
-      .filter(([, v]) => v === 'must')
-      .map(([k]) => k)
+    const mustHaveFeats = Object.entries(featureState).filter(([, v]) => v === 'must').map(([k]) => k)
+    const mustHaveFps = Object.entries(floorplanState).filter(([, v]) => v === 'must').map(([k]) => k)
     return rvs.filter((rv) => {
       const rvFeatureKeys = rv.features.map((f) => f.feature.key)
       if (rvTypes.length && !rvTypes.includes(rv.type)) return false
       if (maxLengthFt && rv.lengthFt > Number(maxLengthFt)) return false
       if (minSleeps && rv.sleeps < Number(minSleeps)) return false
-      if (mustHave.some((k) => !rvFeatureKeys.includes(k))) return false
+      if (mustHaveFeats.some((k) => !rvFeatureKeys.includes(k))) return false
+      if (mustHaveFps.length && !mustHaveFps.includes(rv.floorplanType)) return false
       return true
     }).length
-  }, [rvs, rvTypes, maxLengthFt, minSleeps, featureState])
+  }, [rvs, rvTypes, maxLengthFt, minSleeps, featureState, floorplanState])
 
   function cycleFeature(key: string) {
     const current = featureState[key]
@@ -88,20 +88,29 @@ export default function Matchmaker() {
     )
   }
 
-  function toggleFloorplan(fp: string) {
-    setPreferredFloorplans((prev) =>
-      prev.includes(fp) ? prev.filter((f) => f !== fp) : [...prev, fp],
-    )
+  function cycleFloorplan(fp: string) {
+    const current = floorplanState[fp]
+    if (!current) {
+      setFloorplanState((s) => ({ ...s, [fp]: 'preferred' }))
+    } else if (current === 'preferred') {
+      setFloorplanState((s) => ({ ...s, [fp]: 'must' }))
+    } else {
+      setFloorplanState((s) => {
+        const next = { ...s }
+        delete next[fp]
+        return next
+      })
+    }
   }
 
   async function handleViewResults() {
     setLoading(true)
     setError('')
     try {
-      const mustHaveFeatures = Object.entries(featureState)
-        .filter(([, v]) => v === 'must')
-        .map(([k]) => k)
+      const mustHaveFeatures = Object.entries(featureState).filter(([, v]) => v === 'must').map(([k]) => k)
       const rankedFeatures = selectionOrder.filter((k) => featureState[k] === 'preferred')
+      const preferredFloorplans = Object.entries(floorplanState).filter(([, v]) => v === 'preferred').map(([k]) => k)
+      const mustHaveFloorplans = Object.entries(floorplanState).filter(([, v]) => v === 'must').map(([k]) => k)
       const prefs = {
         rvTypes,
         maxLengthFt: maxLengthFt ? Number(maxLengthFt) : null,
@@ -109,6 +118,7 @@ export default function Matchmaker() {
         mustHaveFeatures,
         rankedFeatures,
         preferredFloorplans,
+        mustHaveFloorplans,
       }
       const results = await api.match(prefs)
       navigate('/results', { state: { results, prefs } })
@@ -247,37 +257,45 @@ export default function Matchmaker() {
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-gray-800 text-sm">Floorplan</h3>
-                {preferredFloorplans.length > 0 && (
+                {Object.keys(floorplanState).length > 0 && (
                   <button
                     type="button"
-                    onClick={() => setPreferredFloorplans([])}
+                    onClick={() => setFloorplanState({})}
                     className="text-xs text-gray-400 hover:text-gray-600"
                   >
                     Clear
                   </button>
                 )}
               </div>
-              <div className="space-y-1.5">
-                {FLOORPLAN_TYPES.map((fp) => (
-                  <button
-                    key={fp.value}
-                    type="button"
-                    onClick={() => toggleFloorplan(fp.value)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs rounded-lg border text-left transition-colors ${
-                      preferredFloorplans.includes(fp.value)
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                    }`}
-                  >
-                    <span>{FLOORPLAN_ICONS[fp.value] ?? '🏠'}</span>
-                    <div>
-                      <div className="font-medium">{fp.label}</div>
-                      <div className={`text-xs leading-tight mt-0.5 ${preferredFloorplans.includes(fp.value) ? 'text-blue-200' : 'text-gray-400'}`}>
-                        {fp.description}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {FLOORPLAN_TYPES.map((fp) => {
+                  const mode = floorplanState[fp.value]
+                  return (
+                    <button
+                      key={fp.value}
+                      type="button"
+                      onClick={() => cycleFloorplan(fp.value)}
+                      title={
+                        !mode
+                          ? 'Click to mark as preferred'
+                          : mode === 'preferred'
+                            ? 'Click to require (must have)'
+                            : 'Click to remove'
+                      }
+                      className={`px-3 py-1.5 text-sm rounded-full border font-medium transition-colors select-none ${
+                        mode === 'must'
+                          ? 'bg-red-100 border-red-400 text-red-800'
+                          : mode === 'preferred'
+                            ? 'bg-blue-100 border-blue-400 text-blue-800'
+                            : 'bg-gray-100 border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      {FLOORPLAN_ICONS[fp.value] ?? '🏠'}{' '}
+                      {mode === 'must' ? '! ' : mode === 'preferred' ? '★ ' : ''}
+                      {fp.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
