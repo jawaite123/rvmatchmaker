@@ -78,6 +78,10 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ action }),
       }),
+    createFeature: (data: { key: string; label: string; category: string }) =>
+      request<Feature>('/features', { method: 'POST', body: JSON.stringify(data) }),
+    deleteFeature: (id: number) =>
+      request<{ ok: boolean }>(`/features/${id}`, { method: 'DELETE' }),
   },
 }
 
