@@ -27,6 +27,45 @@ interface SortableItemProps {
   index: number
 }
 
+const CATEGORIES: { label: string; keys: string[] }[] = [
+  {
+    label: 'Sleeping',
+    keys: ['king_bed', 'queen_bed', 'twin_beds', 'corner_bed', 'murphy_bed', 'bunkhouse'],
+  },
+  {
+    label: 'Bathroom',
+    keys: ['full_bathroom', 'dry_bath', 'wet_bath', 'outdoor_shower', 'tankless_water_heater'],
+  },
+  {
+    label: 'Kitchen',
+    keys: ['outdoor_kitchen', 'residential_fridge', 'convection_oven'],
+  },
+  {
+    label: 'Climate',
+    keys: ['ducted_ac', 'dual_ac', 'heated_tanks', 'fireplace', 'all_season'],
+  },
+  {
+    label: 'Power & Energy',
+    keys: ['solar', 'solar_prep', 'lithium_battery', 'inverter', '50amp', 'generator', 'lp_quick_connect'],
+  },
+  {
+    label: 'Entertainment',
+    keys: ['outdoor_tv', 'smart_tv', 'satellite', 'theater_seating', 'usb_charging'],
+  },
+  {
+    label: 'Tech & Convenience',
+    keys: ['washer_dryer', 'backup_camera', 'leveling_system', 'swivel_cab_seats'],
+  },
+  {
+    label: 'Storage',
+    keys: ['pass_through_storage', 'basement_storage', 'slide_toppers'],
+  },
+  {
+    label: 'Comfort & Other',
+    keys: ['day_night_shades', 'diesel', 'pet_friendly'],
+  },
+]
+
 function SortableItem({ feature, index }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: feature.key,
@@ -78,7 +117,9 @@ export default function StepFeatureRanking({ rankedFeatures, features, onChange 
     .map((key) => features.find((f) => f.key === key))
     .filter(Boolean) as Feature[]
 
-  const unselected = features.filter((f) => !rankedFeatures.includes(f.key))
+  const unselectedKeys = new Set(
+    features.filter((f) => !rankedFeatures.includes(f.key)).map((f) => f.key),
+  )
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -96,6 +137,14 @@ export default function StepFeatureRanking({ rankedFeatures, features, onChange 
   const removeFeature = (key: string) => {
     onChange(rankedFeatures.filter((k) => k !== key))
   }
+
+  const categorizedUnselected = CATEGORIES.map((cat) => ({
+    label: cat.label,
+    features: cat.keys
+      .filter((k) => unselectedKeys.has(k))
+      .map((k) => features.find((f) => f.key === k))
+      .filter(Boolean) as Feature[],
+  })).filter((cat) => cat.features.length > 0)
 
   return (
     <div className="space-y-6">
@@ -132,21 +181,28 @@ export default function StepFeatureRanking({ rankedFeatures, features, onChange 
         </DndContext>
       </div>
 
-      {unselected.length > 0 && (
-        <div>
-          <h4 className="text-sm font-semibold text-gray-600 mb-2">Feature pool — click to add:</h4>
-          <div className="flex flex-wrap gap-2">
-            {unselected.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => addFeature(f.key)}
-                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-blue-100 hover:text-blue-800 border border-gray-200 hover:border-blue-300 rounded-full transition-colors"
-              >
-                + {f.label}
-              </button>
-            ))}
-          </div>
+      {categorizedUnselected.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-gray-600">Feature pool — click to add:</h4>
+          {categorizedUnselected.map((cat) => (
+            <div key={cat.label}>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+                {cat.label}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {cat.features.map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => addFeature(f.key)}
+                    className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-blue-100 hover:text-blue-800 border border-gray-200 hover:border-blue-300 rounded-full transition-colors"
+                  >
+                    + {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

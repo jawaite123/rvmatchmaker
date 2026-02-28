@@ -12,6 +12,8 @@ const FEATURES = [
   { key: 'bunkhouse', label: 'Bunkhouse' },
   // Bathroom
   { key: 'full_bathroom', label: 'Full Bathroom' },
+  { key: 'dry_bath', label: 'Dry Bath' },
+  { key: 'wet_bath', label: 'Wet Bath' },
   { key: 'outdoor_shower', label: 'Outdoor Shower' },
   { key: 'tankless_water_heater', label: 'Tankless Water Heater' },
   // Kitchen
@@ -68,7 +70,7 @@ const RVS = [
     floorplanType: 'REAR_LIVING',
     description: 'Luxury diesel pusher with premium finishes, residential refrigerator, and massive living space.',
     features: [
-      'king_bed', 'full_bathroom', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
+      'king_bed', 'full_bathroom', 'dry_bath', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
       'ducted_ac', 'dual_ac', 'heated_tanks', 'fireplace', 'all_season',
       'solar', 'lithium_battery', 'inverter', '50amp', 'generator', 'lp_quick_connect',
       'outdoor_tv', 'smart_tv', 'satellite', 'theater_seating', 'usb_charging',
@@ -89,7 +91,7 @@ const RVS = [
     floorplanType: 'REAR_LIVING',
     description: 'Upscale diesel coach with rear living room, chef\'s kitchen, and spa-like bathroom.',
     features: [
-      'king_bed', 'full_bathroom', 'residential_fridge', 'convection_oven',
+      'king_bed', 'full_bathroom', 'dry_bath', 'residential_fridge', 'convection_oven',
       'ducted_ac', 'dual_ac', 'heated_tanks', 'fireplace',
       '50amp', 'generator', 'lp_quick_connect',
       'outdoor_tv', 'smart_tv', 'satellite', 'theater_seating',
@@ -110,7 +112,7 @@ const RVS = [
     floorplanType: 'BUNKHOUSE',
     description: 'Family-friendly Class A with front bedroom, bunkhouse, and outdoor kitchen.',
     features: [
-      'twin_beds', 'bunkhouse', 'full_bathroom', 'outdoor_kitchen',
+      'twin_beds', 'bunkhouse', 'full_bathroom', 'dry_bath', 'outdoor_kitchen',
       'ducted_ac', 'lp_quick_connect',
       '50amp', 'generator',
       'outdoor_tv', 'backup_camera', 'leveling_system', 'swivel_cab_seats',
@@ -130,7 +132,7 @@ const RVS = [
     floorplanType: 'BUNKHOUSE',
     description: 'Spacious bunkhouse floor plan perfect for large families with convertible sleeping areas.',
     features: [
-      'twin_beds', 'bunkhouse', 'full_bathroom', 'outdoor_kitchen',
+      'twin_beds', 'bunkhouse', 'full_bathroom', 'dry_bath', 'outdoor_kitchen',
       'ducted_ac', 'lp_quick_connect',
       '50amp', 'generator',
       'backup_camera', 'leveling_system', 'swivel_cab_seats', 'pet_friendly',
@@ -150,7 +152,7 @@ const RVS = [
     floorplanType: 'REAR_BEDROOM',
     description: 'Premium Mercedes-Benz Sprinter-based van with luxury finishes and advanced tech.',
     features: [
-      'full_bathroom', 'outdoor_shower', 'tankless_water_heater',
+      'full_bathroom', 'wet_bath', 'outdoor_shower', 'tankless_water_heater',
       'heated_tanks', 'all_season',
       'solar', 'lithium_battery', 'inverter',
       'smart_tv', 'usb_charging',
@@ -170,7 +172,7 @@ const RVS = [
     floorplanType: 'REAR_LIVING',
     description: 'Versatile van with pop-top roof for extra sleeping, convertible interior layout.',
     features: [
-      'murphy_bed', 'outdoor_shower',
+      'murphy_bed', 'wet_bath', 'outdoor_shower',
       'heated_tanks',
       'solar', 'lithium_battery', 'inverter',
       'smart_tv', 'usb_charging',
@@ -190,7 +192,7 @@ const RVS = [
     floorplanType: 'REAR_BEDROOM',
     description: 'Compact and nimble Class B perfect for couples and solo adventurers.',
     features: [
-      'heated_tanks', 'all_season',
+      'wet_bath', 'heated_tanks', 'all_season',
       'solar', 'solar_prep',
       'usb_charging', 'backup_camera', 'pet_friendly',
     ],
@@ -209,7 +211,7 @@ const RVS = [
     floorplanType: 'BUNKHOUSE',
     description: 'Family favorite with bunk beds over cab, massive slide-outs, and family entertainment.',
     features: [
-      'twin_beds', 'bunkhouse', 'full_bathroom',
+      'twin_beds', 'bunkhouse', 'full_bathroom', 'dry_bath',
       'ducted_ac', 'lp_quick_connect',
       '50amp', 'generator',
       'outdoor_tv', 'backup_camera', 'leveling_system',
@@ -229,7 +231,7 @@ const RVS = [
     floorplanType: 'REAR_BEDROOM',
     description: 'Classic Class C with comfortable rear bedroom, full kitchen, and reliable Ford chassis.',
     features: [
-      'queen_bed', 'full_bathroom', 'outdoor_shower',
+      'queen_bed', 'full_bathroom', 'dry_bath', 'outdoor_shower',
       'ducted_ac', 'lp_quick_connect',
       '50amp', 'generator',
       'backup_camera', 'pass_through_storage', 'day_night_shades', 'pet_friendly',
@@ -248,7 +250,7 @@ const RVS = [
     floorplanType: 'SPLIT_BATH',
     description: 'Mid-size Class C with split bath, outdoor kitchen, and solid value proposition.',
     features: [
-      'twin_beds', 'bunkhouse', 'full_bathroom', 'outdoor_kitchen',
+      'twin_beds', 'bunkhouse', 'full_bathroom', 'dry_bath', 'outdoor_kitchen',
       'ducted_ac', 'lp_quick_connect',
       'generator', 'backup_camera',
     ],
@@ -267,7 +269,7 @@ const RVS = [
     floorplanType: 'REAR_LIVING',
     description: 'Luxury fifth wheel with rear living room, residential appliances, and spa bathroom.',
     features: [
-      'king_bed', 'full_bathroom', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
+      'king_bed', 'full_bathroom', 'dry_bath', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
       'ducted_ac', 'dual_ac', 'heated_tanks', 'fireplace', 'all_season',
       'solar', 'lithium_battery', 'inverter', '50amp', 'lp_quick_connect',
       'smart_tv', 'satellite', 'theater_seating',
@@ -288,7 +290,7 @@ const RVS = [
     floorplanType: 'BUNKHOUSE',
     description: 'Family-sized fifth wheel with triple bunk room, front living, and two full baths.',
     features: [
-      'twin_beds', 'queen_bed', 'bunkhouse', 'full_bathroom', 'outdoor_kitchen',
+      'twin_beds', 'queen_bed', 'bunkhouse', 'full_bathroom', 'dry_bath', 'outdoor_kitchen',
       'ducted_ac', 'fireplace', 'lp_quick_connect',
       '50amp', 'leveling_system',
       'outdoor_tv', 'washer_dryer',
@@ -308,7 +310,7 @@ const RVS = [
     floorplanType: 'REAR_LIVING',
     description: 'Premium fifth wheel with island kitchen, rear entertainment, and comfort everywhere.',
     features: [
-      'king_bed', 'full_bathroom', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
+      'king_bed', 'full_bathroom', 'dry_bath', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
       'ducted_ac', 'fireplace', 'lp_quick_connect',
       'solar', '50amp', 'leveling_system',
       'outdoor_tv',
@@ -328,7 +330,7 @@ const RVS = [
     floorplanType: 'FRONT_LIVING',
     description: 'Ultra-lux fifth wheel with front bedroom suite, mid-living, and full-length wardrobe.',
     features: [
-      'king_bed', 'full_bathroom', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
+      'king_bed', 'full_bathroom', 'dry_bath', 'outdoor_kitchen', 'residential_fridge', 'convection_oven',
       'ducted_ac', 'dual_ac', 'heated_tanks', 'fireplace', 'all_season',
       'solar', 'lithium_battery', 'inverter', '50amp', 'lp_quick_connect',
       'smart_tv', 'satellite', 'theater_seating',
@@ -350,7 +352,7 @@ const RVS = [
     floorplanType: 'REAR_BEDROOM',
     description: 'Iconic aluminum travel trailer with timeless design, premium appliances, and full off-road capability.',
     features: [
-      'king_bed', 'full_bathroom', 'outdoor_shower', 'tankless_water_heater', 'residential_fridge', 'convection_oven',
+      'king_bed', 'full_bathroom', 'dry_bath', 'outdoor_shower', 'tankless_water_heater', 'residential_fridge', 'convection_oven',
       'heated_tanks', 'all_season',
       'solar', 'lithium_battery', 'inverter', '50amp',
       'washer_dryer',
@@ -370,7 +372,7 @@ const RVS = [
     floorplanType: 'REAR_BEDROOM',
     description: 'Well-built travel trailer with solid construction, rear bedroom, and great livability.',
     features: [
-      'queen_bed', 'full_bathroom', 'outdoor_kitchen',
+      'queen_bed', 'full_bathroom', 'dry_bath', 'outdoor_kitchen',
       'heated_tanks', 'all_season', 'lp_quick_connect',
       'solar', '50amp',
       'outdoor_tv', 'slide_toppers', 'pass_through_storage',
@@ -389,7 +391,7 @@ const RVS = [
     floorplanType: 'BUNKHOUSE',
     description: 'Budget-friendly bunkhouse trailer with double bunks, outdoor kitchen, and family layout.',
     features: [
-      'twin_beds', 'bunkhouse', 'full_bathroom', 'outdoor_kitchen',
+      'twin_beds', 'bunkhouse', 'full_bathroom', 'dry_bath', 'outdoor_kitchen',
       'lp_quick_connect',
       'outdoor_tv', 'day_night_shades', 'pet_friendly',
     ],
@@ -407,7 +409,7 @@ const RVS = [
     floorplanType: 'REAR_BEDROOM',
     description: 'Built for four-season camping with heated tanks, high R-value insulation, and mountain-ready build.',
     features: [
-      'queen_bed', 'full_bathroom', 'outdoor_shower',
+      'queen_bed', 'full_bathroom', 'dry_bath', 'outdoor_shower',
       'heated_tanks', 'all_season', 'lp_quick_connect',
       'solar', 'solar_prep', 'lithium_battery', '50amp',
       'pet_friendly',
@@ -426,7 +428,7 @@ const RVS = [
     floorplanType: 'SPLIT_BATH',
     description: 'Light and easy-to-tow travel trailer with split bath, dinette, and rear bunks.',
     features: [
-      'twin_beds', 'corner_bed', 'bunkhouse', 'full_bathroom',
+      'twin_beds', 'corner_bed', 'bunkhouse', 'full_bathroom', 'dry_bath',
       'lp_quick_connect', 'usb_charging', 'day_night_shades', 'pet_friendly',
     ],
   },
