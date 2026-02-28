@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model RV {
+  id            Int           @id @default(autoincrement())
+  brand         String
+  model         String
+  year          Int
+  type          String
+  lengthFt      Float
+  sleeps        Int
+  slides        Int           @default(0)
+  weightLbs     Int?
+  msrp          Int?
+  floorplanType String
+  floorplanUrl  String?
+  description   String?
+  imageUrl      String?
+  status        String        @default("PENDING")
+  submittedBy   String?
+  features      RVFeature[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Feature {
+  id    Int         @id @default(autoincrement())
+  key   String      @unique
+  label String
+  rvs   RVFeature[]
+}
+
+model RVFeature {
+  rv        RV      @relation(fields: [rvId], references: [id])
+  rvId      Int
+  feature   Feature @relation(fields: [featureId], references: [id])
+  featureId Int
+
+  @@id([rvId, featureId])
+}

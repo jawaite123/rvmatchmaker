@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rv-blue: #1e40af;
+  --color-rv-orange: #ea580c;
+}
