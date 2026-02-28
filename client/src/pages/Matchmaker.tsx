@@ -1,5 +1,15 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, type ReactNode } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import {
+  DndContext,
+  DragOverlay,
+  useDroppable,
+  useDraggable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
 import { api, RV_TYPES, FLOORPLAN_TYPES } from '../lib/api'
 import type { Feature, RV } from '../lib/api'
 
@@ -28,6 +38,70 @@ const FLOORPLAN_ICONS: Record<string, string> = {
 
 type FeatureMode = 'preferred' | 'must'
 
+function DroppableZone({
+  id,
+  label,
+  color,
+  children,
+  isEmpty,
+}: {
+  id: string
+  label: string
+  color: 'red' | 'blue'
+  children: ReactNode
+  isEmpty: boolean
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border-2 border-dashed p-3 min-h-[72px] transition-colors ${
+        color === 'red'
+          ? isOver
+            ? 'border-red-400 bg-red-100'
+            : 'border-red-200 bg-red-50'
+          : isOver
+            ? 'border-blue-400 bg-blue-100'
+            : 'border-blue-200 bg-blue-50'
+      }`}
+    >
+      <div className={`text-xs font-semibold mb-2 ${color === 'red' ? 'text-red-700' : 'text-blue-700'}`}>
+        {label}
+      </div>
+      {isEmpty ? (
+        <p className="text-xs text-gray-400 italic">Drag features here</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">{children}</div>
+      )}
+    </div>
+  )
+}
+
+function DraggablePoolPill({
+  id,
+  label,
+  onClick,
+}: {
+  id: string
+  label: string
+  onClick: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id })
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
+      onClick={onClick}
+      {...listeners}
+      {...attributes}
+      className={`px-3 py-1.5 text-sm rounded-full border font-medium bg-gray-100 border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-200 transition-colors select-none cursor-grab active:cursor-grabbing touch-none${isDragging ? ' opacity-40' : ''}`}
+    >
+      {label}
+    </button>
+  )
+}
+
 export default function Matchmaker() {
   const navigate = useNavigate()
   const [rvs, setRvs] = useState<RV[]>([])
@@ -41,6 +115,9 @@ export default function Matchmaker() {
   const [floorplanState, setFloorplanState] = useState<Record<string, FeatureMode>>({})
   const [featureState, setFeatureState] = useState<Record<string, FeatureMode>>({})
   const [selectionOrder, setSelectionOrder] = useState<string[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   useEffect(() => {
     Promise.all([api.getRVs(), api.getFeatures()])
@@ -50,6 +127,12 @@ export default function Matchmaker() {
       })
       .catch(console.error)
   }, [])
+
+  const featureLabelMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const f of features) map[f.key] = f.label
+    return map
+  }, [features])
 
   const matchCount = useMemo(() => {
     const mustHaveFeats = Object.entries(featureState).filter(([, v]) => v === 'must').map(([k]) => k)
@@ -65,20 +148,49 @@ export default function Matchmaker() {
     }).length
   }, [rvs, rvTypes, maxLengthFt, minSleeps, featureState, floorplanState])
 
-  function cycleFeature(key: string) {
-    const current = featureState[key]
-    if (!current) {
-      setFeatureState((s) => ({ ...s, [key]: 'preferred' }))
-      setSelectionOrder((o) => [...o, key])
-    } else if (current === 'preferred') {
-      setFeatureState((s) => ({ ...s, [key]: 'must' }))
+  function addFeature(key: string, mode: FeatureMode) {
+    setFeatureState((s) => ({ ...s, [key]: mode }))
+    if (mode === 'preferred') {
+      setSelectionOrder((o) => (o.includes(key) ? o : [...o, key]))
     } else {
-      setFeatureState((s) => {
-        const next = { ...s }
-        delete next[key]
-        return next
-      })
       setSelectionOrder((o) => o.filter((k) => k !== key))
+    }
+  }
+
+  function removeFeature(key: string) {
+    setFeatureState((s) => {
+      const next = { ...s }
+      delete next[key]
+      return next
+    })
+    setSelectionOrder((o) => o.filter((k) => k !== key))
+  }
+
+  function moveFeature(key: string, mode: FeatureMode) {
+    setFeatureState((s) => ({ ...s, [key]: mode }))
+    if (mode === 'preferred') {
+      setSelectionOrder((o) => (o.includes(key) ? o : [...o, key]))
+    } else {
+      setSelectionOrder((o) => o.filter((k) => k !== key))
+    }
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id))
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null)
+    const { active, over } = event
+    if (!over) return
+    const dragId = String(active.id)
+    const featureKey = dragId.startsWith('pool-') ? dragId.slice(5) : dragId
+    const zone = String(over.id) as FeatureMode
+    if (!['must', 'preferred'].includes(zone)) return
+    if (featureState[featureKey]) {
+      moveFeature(featureKey, zone)
+    } else {
+      addFeature(featureKey, zone)
     }
   }
 
@@ -141,10 +253,17 @@ export default function Matchmaker() {
     return [...ordered, ...rest]
   }, [features])
 
+  const mustFeatureKeys = Object.entries(featureState).filter(([, v]) => v === 'must').map(([k]) => k)
+  const preferredFeatureKeys = selectionOrder.filter((k) => featureState[k] === 'preferred')
+  const selectedKeys = new Set(Object.keys(featureState))
+  const activeDragLabel = activeId?.startsWith('pool-') ? featureLabelMap[activeId.slice(5)] : null
+
   return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <div className="min-h-screen bg-gray-50">
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        {/* Nav row */}
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="text-xl">🚐</span>
@@ -171,24 +290,69 @@ export default function Matchmaker() {
             </div>
           </div>
         </div>
+
+        {/* Drop zones — always visible */}
+        <div className="max-w-6xl mx-auto px-4 pb-3 grid grid-cols-2 gap-3">
+          <DroppableZone id="must" label="🛑 Must Have" color="red" isEmpty={mustFeatureKeys.length === 0}>
+            {mustFeatureKeys.map((key) => (
+              <div
+                key={key}
+                className="flex items-center gap-1 pl-2.5 pr-1 py-1 bg-red-100 border border-red-400 text-red-800 rounded-full text-sm font-medium"
+              >
+                <span>🛑 {featureLabelMap[key] ?? key}</span>
+                <button
+                  type="button"
+                  title="Move to Nice to Have"
+                  onClick={() => moveFeature(key, 'preferred')}
+                  className="ml-0.5 px-1 text-red-500 hover:text-red-800 text-xs font-bold"
+                >
+                  ★
+                </button>
+                <button
+                  type="button"
+                  title="Remove"
+                  onClick={() => removeFeature(key)}
+                  className="px-1 text-red-400 hover:text-red-700 text-xs font-bold"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </DroppableZone>
+
+          <DroppableZone id="preferred" label="★ Nice to Have" color="blue" isEmpty={preferredFeatureKeys.length === 0}>
+            {preferredFeatureKeys.map((key) => (
+              <div
+                key={key}
+                className="flex items-center gap-1 pl-2.5 pr-1 py-1 bg-blue-100 border border-blue-400 text-blue-800 rounded-full text-sm font-medium"
+              >
+                <span>★ {featureLabelMap[key] ?? key}</span>
+                <button
+                  type="button"
+                  title="Move to Must Have"
+                  onClick={() => moveFeature(key, 'must')}
+                  className="ml-0.5 px-1 text-blue-500 hover:text-blue-800 text-xs"
+                >
+                  🛑
+                </button>
+                <button
+                  type="button"
+                  title="Remove"
+                  onClick={() => removeFeature(key)}
+                  className="px-1 text-blue-400 hover:text-blue-700 text-xs font-bold"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </DroppableZone>
+        </div>
+
         {error && <p className="text-red-500 text-xs text-center pb-2">{error}</p>}
       </div>
 
       {/* Body */}
       <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Legend */}
-        <p className="text-xs text-gray-500 mb-5">
-          Click a feature once to mark it as{' '}
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 border border-blue-400 text-blue-800 rounded-full font-medium">
-            ★ preferred
-          </span>
-          {' '}· click again to require it as{' '}
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 border border-red-400 text-red-800 rounded-full font-medium">
-            ! must have
-          </span>
-          {' '}(reduces match count) · click once more to remove.
-        </p>
-
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
           {/* Left: filters */}
           <div className="space-y-5">
@@ -300,45 +464,39 @@ export default function Matchmaker() {
             </div>
           </div>
 
-          {/* Right: feature categories */}
+          {/* Right: feature pool — only shows unselected features */}
           <div className="space-y-4">
-            {featureCategories.map((cat) => (
-              <div key={cat.label} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-                <h3 className="font-semibold text-gray-800 text-sm mb-3">{cat.label}</h3>
-                <div className="flex flex-wrap gap-2">
-                    {cat.features.map((f) => {
-                      const mode = featureState[f.key]
-                      return (
-                        <button
-                          key={f.key}
-                          type="button"
-                          onClick={() => cycleFeature(f.key)}
-                          title={
-                            !mode
-                              ? 'Click to mark as preferred'
-                              : mode === 'preferred'
-                                ? 'Click to require (must have)'
-                                : 'Click to remove'
-                          }
-                          className={`px-3 py-1.5 text-sm rounded-full border font-medium transition-colors select-none ${
-                            mode === 'must'
-                              ? 'bg-red-100 border-red-400 text-red-800'
-                              : mode === 'preferred'
-                                ? 'bg-blue-100 border-blue-400 text-blue-800'
-                                : 'bg-gray-100 border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-200'
-                          }`}
-                        >
-                          {mode === 'must' ? '! ' : mode === 'preferred' ? '★ ' : ''}
-                          {f.label}
-                        </button>
-                      )
-                    })}
+            {featureCategories.map((cat) => {
+              const unselected = cat.features.filter((f) => !selectedKeys.has(f.key))
+              if (unselected.length === 0) return null
+              return (
+                <div key={cat.label} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                  <h3 className="font-semibold text-gray-800 text-sm mb-3">{cat.label}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {unselected.map((f) => (
+                      <DraggablePoolPill
+                        key={f.key}
+                        id={`pool-${f.key}`}
+                        label={f.label}
+                        onClick={() => addFeature(f.key, 'preferred')}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
+
+      <DragOverlay>
+        {activeDragLabel && (
+          <div className="px-3 py-1.5 text-sm rounded-full border font-medium bg-white border-gray-400 text-gray-700 shadow-lg cursor-grabbing">
+            {activeDragLabel}
+          </div>
+        )}
+      </DragOverlay>
     </div>
+    </DndContext>
   )
 }
