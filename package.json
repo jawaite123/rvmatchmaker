@@ -7,9 +7,15 @@
     "dev:client": "npm run dev --prefix client",
     "dev:server": "npm run dev --prefix server",
     "build": "npm run build --prefix client && npm run build --prefix server",
-    "seed": "npm run seed --prefix server"
+    "seed": "npm run seed --prefix server",
+    "postinstall": "prisma generate --schema server/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.2"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@vercel/node": "^3.0.0",
+    "concurrently": "^8.2.2",
+    "prisma": "^5.10.2"
   }
 }
